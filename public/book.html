@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Book an appointment — Haven Health</title>
+<meta name="description" content="Choose a service, see live availability, and confirm your Haven Health appointment in under a minute." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/base.css" />
+<link rel="stylesheet" href="/assets/home.css" />
+<link rel="stylesheet" href="/assets/app.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%236c55d9'/%3E%3Cpath d='M16 9v14M9 16h14' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+<header class="nav">
+  <div class="shell nav-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+      </span>
+      Haven<span style="color:var(--sage)">Health</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/book.html" aria-current="page">Find an Appointment</a>
+      <a href="/appointments.html">My Appointments</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="nav-signin" href="/appointments.html">Manage a booking</a>
+    </div>
+  </div>
+</header>
+
+<main class="shell" id="flow">
+  <div class="page-hero" style="padding-bottom:8px">
+    <span class="eyebrow"><span class="dot"></span> Live availability</span>
+    <h1>Book your appointment</h1>
+    <p class="lead">Pick a service, choose a time that is genuinely free, and confirm. You can change your mind and cancel later from the appointments page.</p>
+  </div>
+
+  <ol class="progress" id="progress" aria-label="Booking progress">
+    <li class="progress-step is-active" data-indicator="1"><span class="pnum">1</span><span>Service</span></li>
+    <li class="progress-step" data-indicator="2"><span class="pnum">2</span><span>Date</span></li>
+    <li class="progress-step" data-indicator="3"><span class="pnum">3</span><span>Time</span></li>
+    <li class="progress-step" data-indicator="4"><span class="pnum">4</span><span>Details</span></li>
+    <li class="progress-step" data-indicator="5"><span class="pnum">5</span><span>Review</span></li>
+  </ol>
+
+  <div id="flow-error" class="notice err" hidden style="margin-bottom:18px"></div>
+
+  <div class="wizard">
+    <div>
+      <!-- Step 1 -->
+      <section class="panel" data-step="1" aria-labelledby="step1-title">
+        <div class="panel-head">
+          <h2 id="step1-title">What do you need help with?</h2>
+          <p>Choose the type of appointment. You will see every free slot for it next.</p>
+        </div>
+        <div class="pick-grid" id="service-grid" role="radiogroup" aria-label="Service"></div>
+      </section>
+
+      <!-- Step 2 -->
+      <section class="panel" data-step="2" hidden aria-labelledby="step2-title">
+        <div class="panel-head">
+          <h2 id="step2-title">Choose a date</h2>
+          <p>Dates with a green dot have open appointments. Everything else is fully booked.</p>
+        </div>
+        <div id="cal-state"></div>
+        <div class="cal-wrap">
+          <div class="cal">
+            <div class="cal-head">
+              <button class="cal-nav" id="cal-prev" type="button" aria-label="Previous month">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <strong id="cal-label">Month</strong>
+              <button class="cal-nav" id="cal-next" type="button" aria-label="Next month">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+            <div class="cal-grid" id="cal-dow" aria-hidden="true"></div>
+            <div class="cal-grid" id="cal-grid" role="grid" aria-label="Available dates"></div>
+          </div>
+          <div>
+            <div class="state" id="cal-summary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3.5V7M16 3.5V7M3.5 10h17"/></svg>
+              <h3>Pick a date to continue</h3>
+              <p>We will show the exact times and which clinician is free.</p>
+            </div>
+            <div class="quick-times" id="cal-quick"></div>
+          </div>
+        </div>
+        <div class="wiz-actions">
+          <button class="btn btn-ghost" type="button" data-back>Back</button>
+          <div class="right"><button class="btn btn-primary" type="button" id="to-time" disabled>See times</button></div>
+        </div>
+      </section>
+
+      <!-- Step 3 -->
+      <section class="panel" data-step="3" hidden aria-labelledby="step3-title">
+        <div class="panel-head">
+          <h2 id="step3-title">Select a time</h2>
+          <p id="time-sub">Live availability for your chosen date.</p>
+        </div>
+        <div id="slot-state"></div>
+        <div class="slot-pane" id="slot-pane" hidden>
+          <h3>Available times</h3>
+          <div class="slot-grid" id="slot-grid" role="radiogroup" aria-label="Available times"></div>
+        </div>
+        <div class="wiz-actions">
+          <button class="btn btn-ghost" type="button" data-back>Back</button>
+          <div class="right"><button class="btn btn-primary" type="button" id="to-details" disabled>Continue</button></div>
+        </div>
+      </section>
+
+      <!-- Step 4 -->
+      <section class="panel" data-step="4" hidden aria-labelledby="step4-title">
+        <div class="panel-head">
+          <h2 id="step4-title">Your details</h2>
+          <p>We use these only to hold your appointment and send your confirmation.</p>
+        </div>
+        <form id="details-form" novalidate>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="name">Full name</label>
+              <input class="input" id="name" name="name" type="text" autocomplete="name" placeholder="Alex Morgan" />
+              <span class="field-error" id="name-error" role="alert"></span>
+            </div>
+            <div class="field full">
+              <label for="email">Email address</label>
+              <input class="input" id="email" name="email" type="email" autocomplete="email" placeholder="alex@example.com" />
+              <span class="hint">We send your confirmation and booking reference here.</span>
+              <span class="field-error" id="email-error" role="alert"></span>
+            </div>
+          </div>
+        </form>
+        <div class="wiz-actions">
+          <button class="btn btn-ghost" type="button" data-back>Back</button>
+          <div class="right"><button class="btn btn-primary" type="button" id="to-review">Review booking</button></div>
+        </div>
+      </section>
+
+      <!-- Step 5 -->
+      <section class="panel" data-step="5" hidden aria-labelledby="step5-title">
+        <div class="panel-head">
+          <h2 id="step5-title">Review and confirm</h2>
+          <p>One last look before we hold this time for you.</p>
+        </div>
+        <div class="review-card" id="review-card"></div>
+        <div id="confirm-error" class="notice err" hidden style="margin-top:16px"></div>
+        <div class="wiz-actions">
+          <button class="btn btn-ghost" type="button" data-back>Back</button>
+          <div class="right">
+            <button class="btn btn-primary" type="button" id="confirm-btn">
+              Confirm appointment
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side-card" aria-label="Your selection so far">
+      <h3>Your appointment</h3>
+      <div class="summary-list">
+        <div class="summary-item"><span>Service</span><strong id="sum-service">Not chosen yet</strong></div>
+        <div class="summary-item"><span>Date</span><strong id="sum-date">Not chosen yet</strong></div>
+        <div class="summary-item"><span>Time</span><strong id="sum-time">Not chosen yet</strong></div>
+        <div class="summary-item"><span>Clinician</span><strong id="sum-provider">Not chosen yet</strong></div>
+      </div>
+      <p class="muted" style="font-size:0.8rem">Times shown are live from the clinic schedule and are held the moment you confirm.</p>
+      <a class="link-arrow" href="/appointments.html">Manage an existing booking
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </aside>
+  </div>
+</main>
+
+<section class="shell" id="confirmation" hidden>
+  <div class="confirm-wrap">
+    <div class="confirm-card">
+      <div class="confirm-top">
+        <span class="success-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <h1>You are booked</h1>
+        <p class="muted" style="max-width:44ch" id="confirm-message">Your appointment is confirmed. We have your details and the time is held for you.</p>
+        <span class="ref-pill">Booking reference <code id="confirm-ref">—</code></span>
+      </div>
+      <div>
+        <div class="review-row"><span>Service</span><strong id="confirm-service">—</strong></div>
+        <div class="review-row"><span>Clinician</span><strong id="confirm-provider">—</strong></div>
+        <div class="review-row"><span>Date</span><strong id="confirm-date">—</strong></div>
+        <div class="review-row"><span>Time</span><strong id="confirm-time">—</strong></div>
+        <div class="review-row"><span>Patient</span><strong id="confirm-patient">—</strong></div>
+        <div class="review-row"><span>Status</span><strong><span class="status-pill status-confirmed" id="confirm-status">confirmed</span></strong></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a class="btn btn-primary" href="/appointments.html" id="view-bookings">View my appointments</a>
+      <a class="btn btn-ghost" href="/book.html" id="book-another">Book another appointment</a>
+    </div>
+    <p class="muted" style="font-size:0.85rem">Keep your reference handy. You can look up this booking any time with your email address.</p>
+  </div>
+</section>
+
+<footer class="footer footer-compact">
+  <div class="shell footer-compact-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true" style="width:30px;height:30px;border-radius:10px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+      </span>
+      Haven<span style="color:#9fdcbe">Health</span>
+    </a>
+    <nav aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/appointments.html">My appointments</a>
+      <a href="/#services">Services</a>
+      <a href="/#contact">Contact</a>
+    </nav>
+    <span class="copy">© <span data-year>2026</span> Haven Health</span>
+  </div>
+</footer>
+
+<script src="/assets/site.js"></script>
+<script src="/assets/booking.js"></script>
+</body>
+</html>

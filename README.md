@@ -62,6 +62,26 @@ as `cursor` to fetch the next page; `next_cursor` is `null` on the last page.
 
 Returns the cancelled booking. Cancelling twice returns `409`.
 
+## Web app
+
+Three static pages are served from `public/` by the same process, so the page and the
+API share an origin:
+
+| Page | Path |
+| --- | --- |
+| Home (hero, services, how it works, trust) | `/` |
+| Five-step booking wizard | `/book.html` |
+| Look up, check or cancel bookings | `/appointments.html` |
+
+No build step and no framework: plain HTML, CSS and ES modules. Plus Jakarta Sans for
+headings and Inter for body text, inline SVG icons.
+
+The browser never sees the API key. UI code calls `/api/*`; a top-level Express
+middleware strips the `/api` prefix and injects `X-API-Key` server-side before the
+existing handlers run, so auth and every status code behave exactly as documented
+below. Availability, booking, lookup and cancellation all read live data — there is no
+sample appointment data in the front end.
+
 ## Behaviour notes
 
 - Bookings are guarded by a unique check on confirmed bookings per slot, so concurrent

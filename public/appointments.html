@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My appointments — Haven Health</title>
+<meta name="description" content="Look up, review and cancel your Haven Health appointments with the email you booked with." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/base.css" />
+<link rel="stylesheet" href="/assets/home.css" />
+<link rel="stylesheet" href="/assets/app.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%236c55d9'/%3E%3Cpath d='M16 9v14M9 16h14' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+<header class="nav">
+  <div class="shell nav-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+      </span>
+      Haven<span style="color:var(--sage)">Health</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/book.html">Find an Appointment</a>
+      <a href="/appointments.html" aria-current="page">My Appointments</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="nav-signin" href="/book.html">Book a visit</a>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <div class="page-hero" style="padding-bottom:26px">
+    <span class="eyebrow"><span class="dot"></span> Your appointments</span>
+    <h1>Manage your bookings</h1>
+    <p class="lead">Enter the email you booked with to see your appointments, check their status, or cancel one that you no longer need.</p>
+  </div>
+
+  <div class="manage-grid">
+    <section class="search-card" aria-labelledby="lookup-title">
+      <div>
+        <h2 id="lookup-title" style="font-size:1.15rem">Find my appointments</h2>
+        <p class="muted" style="font-size:0.88rem;margin-top:6px">We match on the exact email used at booking.</p>
+      </div>
+      <form id="lookup-form" novalidate style="display:grid;gap:12px">
+        <div class="field">
+          <label for="lookup-email">Email address</label>
+          <input class="input" id="lookup-email" type="email" autocomplete="email" placeholder="alex@example.com" />
+          <span class="field-error" id="lookup-error" role="alert"></span>
+        </div>
+        <button class="btn btn-primary" type="submit" id="lookup-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
+          Look up bookings
+        </button>
+      </form>
+      <div class="notice info" style="font-size:0.82rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
+        <div>Booked a moment ago? Use the same email and your reference will appear here.</div>
+      </div>
+    </section>
+
+    <section aria-live="polite">
+      <div id="results-note" class="notice" hidden style="margin-bottom:16px"></div>
+      <div id="results">
+        <div class="state" style="background:#fff;border-style:solid">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="13" rx="3"/><path d="m4 8 8 5 8-5"/></svg>
+          <h3>No appointments loaded yet</h3>
+          <p>Pop your email in and we will pull up every booking linked to it, newest first.</p>
+          <a class="btn btn-ghost btn-sm" href="/book.html">Book your first appointment</a>
+        </div>
+      </div>
+      <div style="margin-top:18px;display:flex;justify-content:center">
+        <button class="btn btn-ghost btn-sm" type="button" id="load-more" hidden>Load more bookings</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<dialog id="cancel-dialog" aria-labelledby="cancel-title">
+  <form method="dialog" class="dialog-inner">
+    <h3 id="cancel-title">Cancel this appointment?</h3>
+    <p id="cancel-copy">This frees the time for someone else. You can always book a new appointment afterwards.</p>
+    <div id="cancel-target" class="review-card" style="font-size:0.9rem"></div>
+    <div class="dialog-actions">
+      <button class="btn btn-ghost" value="keep" type="submit">Keep it</button>
+      <button class="btn btn-primary" value="confirm" type="submit" id="cancel-confirm" style="background:linear-gradient(135deg,#f0876c,#cf5b41);box-shadow:0 12px 26px -12px rgba(207,91,65,.7)">Cancel appointment</button>
+    </div>
+  </form>
+</dialog>
+
+<footer class="footer footer-compact">
+  <div class="shell footer-compact-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true" style="width:30px;height:30px;border-radius:10px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+      </span>
+      Haven<span style="color:#9fdcbe">Health</span>
+    </a>
+    <nav aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/book.html">Book an appointment</a>
+      <a href="/#services">Services</a>
+      <a href="/#contact">Contact</a>
+    </nav>
+    <span class="copy">© <span data-year>2026</span> Haven Health</span>
+  </div>
+</footer>
+
+<script src="/assets/site.js"></script>
+<script src="/assets/manage.js"></script>
+</body>
+</html>

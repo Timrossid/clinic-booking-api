@@ -3,307 +3,368 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Clinic Booking</title>
-<style>
-  :root { color-scheme: light dark; }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    background: #f6f7f9; color: #16181d; line-height: 1.5;
-  }
-  @media (prefers-color-scheme: dark) {
-    body { background: #14161a; color: #e8eaed; }
-    .card { background: #1c1f25 !important; border-color: #2a2e36 !important; }
-    .slot, input { background: #23272f !important; color: #e8eaed !important; border-color: #343943 !important; }
-  }
-  header { padding: 28px 20px 8px; max-width: 760px; margin: 0 auto; }
-  h1 { font-size: 1.5rem; margin: 0 0 4px; }
-  .sub { margin: 0; opacity: .7; font-size: .95rem; }
-  main { max-width: 760px; margin: 0 auto; padding: 16px 20px 64px; }
-  .card {
-    background: #fff; border: 1px solid #e3e6ea; border-radius: 12px;
-    padding: 18px; margin: 16px 0;
-  }
-  h2 { font-size: 1.05rem; margin: 0 0 12px; }
-  label { display: block; font-size: .85rem; font-weight: 600; margin: 10px 0 4px; }
-  input {
-    width: 100%; padding: 10px 12px; font: inherit; border-radius: 8px;
-    border: 1px solid #cfd4da; background: #fff;
-  }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .row > div { flex: 1 1 220px; }
-  .slot {
-    display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding: 12px; border: 1px solid #e3e6ea; border-radius: 10px; margin-bottom: 8px;
-    background: #fbfbfc;
-  }
-  .slot .meta { font-size: .9rem; }
-  .slot .when { font-weight: 600; }
-  .slot.booked { opacity: .5; }
-  button {
-    font: inherit; font-weight: 600; cursor: pointer; border-radius: 8px;
-    border: 1px solid transparent; padding: 9px 14px; background: #2563eb; color: #fff;
-  }
-  button:hover { background: #1d4ed8; }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  button.ghost { background: transparent; color: inherit; border-color: #cfd4da; }
-  button.danger { background: #dc2626; }
-  .banner { padding: 10px 12px; border-radius: 8px; font-size: .9rem; margin: 12px 0; display: none; }
-  .banner.ok { display: block; background: #dcfce7; color: #14532d; }
-  .banner.err { display: block; background: #fee2e2; color: #7f1d1d; }
-  .booking { border-top: 1px solid #e3e6ea; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .booking:first-of-type { border-top: 0; }
-  .pill { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: #e5e7eb; color: #374151; }
-  .pill.cancelled { background: #fde68a; color: #78350f; }
-  .empty { opacity: .6; font-size: .9rem; }
-  code { font-size: .8rem; opacity: .6; word-break: break-all; }
-</style>
+<title>Haven Health — Book a clinic appointment that fits your day</title>
+<meta name="description" content="Haven Health makes it simple to find a clinician, pick a time that suits you, and manage your visit — all in one calm, secure place." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/base.css" />
+<link rel="stylesheet" href="/assets/home.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%236c55d9'/%3E%3Cpath d='M16 9v14M9 16h14' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
 </head>
 <body>
-<header>
-  <h1>Clinic Booking</h1>
-  <p class="sub">View available slots, book an appointment, and manage your bookings.</p>
+<header class="nav">
+  <div class="shell nav-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+      </span>
+      Haven<span style="color:var(--sage)">Health</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/" aria-current="page">Home</a>
+      <a href="/book.html">Find an Appointment</a>
+      <a href="#services">Our Services</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="nav-signin" href="/appointments.html">Sign in</a>
+      <a class="btn btn-primary btn-sm" href="/book.html">
+        Book an Appointment
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/">Home</a>
+    <a href="/book.html">Find an Appointment</a>
+    <a href="#services">Our Services</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+    <a href="/appointments.html">Sign in</a>
+    <a class="btn btn-primary" href="/book.html">Book an Appointment</a>
+  </div>
 </header>
 
 <main>
-  <div class="card">
-    <h2>Your details</h2>
-    <div class="row">
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="dot"></span> Now accepting new patients</span>
+        <h1>Your health.<br />Your time.<br /><em>Your wellbeing.</em></h1>
+        <p class="lead">Find the right clinician, see exactly when they are free, and lock in a time in under a minute. No phone queues, no waiting rooms, no guesswork.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="/book.html">
+            Book an Appointment
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#services">Explore Our Services</a>
+        </div>
+        <div class="hero-trust">
+          <ul style="display:contents">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Professional, verified care</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Live availability</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Secure booking</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="art-frame">
+          <svg viewBox="0 0 520 490" role="presentation">
+            <defs>
+              <linearGradient id="arch" x1="0" y1="0" x2="0.7" y2="1">
+                <stop offset="0" stop-color="#8f7bef" /><stop offset="1" stop-color="#5b45c4" />
+              </linearGradient>
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#fff3e8" /><stop offset="0.55" stop-color="#fdf6ff" /><stop offset="1" stop-color="#eaf7f0" />
+              </linearGradient>
+              <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#8fd3b1" /><stop offset="1" stop-color="#3f9573" />
+              </linearGradient>
+              <linearGradient id="peachblob" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ffc8ae" /><stop offset="1" stop-color="#ef7a5f" />
+              </linearGradient>
+              <clipPath id="archclip">
+                <path d="M168 448V236a92 92 0 0 1 184 0v212z" />
+              </clipPath>
+            </defs>
+
+            <circle cx="108" cy="108" r="132" fill="#fff" opacity=".5" />
+            <circle cx="436" cy="392" r="118" fill="#fff" opacity=".38" />
+
+            <!-- window -->
+            <path d="M150 448V228a110 110 0 0 1 220 0v220z" fill="url(#arch)" opacity=".14" />
+            <path d="M168 448V236a92 92 0 0 1 184 0v212z" fill="url(#sky)" />
+            <g clip-path="url(#archclip)">
+              <circle cx="260" cy="246" r="64" fill="#ffd9be" opacity=".55" />
+              <circle cx="260" cy="246" r="34" fill="#f6b490" opacity=".65" />
+              <path d="M168 372c34-26 62-26 92 0s62 26 92 0v76H168z" fill="#cdeedc" opacity=".85" />
+              <path d="M168 402c40-22 68-22 104 0s62 20 80 10v36H168z" fill="#a9dfc4" opacity=".7" />
+            </g>
+            <path d="M168 448V236a92 92 0 0 1 184 0v212z" fill="none" stroke="url(#arch)" stroke-width="2" opacity=".5" />
+
+            <!-- badge -->
+            <circle cx="260" cy="256" r="26" fill="#fff" opacity=".9" />
+            <path d="M260 246v20M250 256h20" stroke="url(#arch)" stroke-width="3.4" stroke-linecap="round" />
+
+            <!-- floor -->
+            <path d="M70 448h380" stroke="#6c55d9" stroke-width="2" opacity=".22" />
+            <ellipse cx="260" cy="452" rx="150" ry="9" fill="#6c55d9" opacity=".08" />
+
+            <!-- plant -->
+            <g transform="translate(292 0)">
+              <path d="M96 448v-54" stroke="#3f9573" stroke-width="3" stroke-linecap="round" />
+              <path d="M96 414c-26-4-38-22-38-40 22 2 36 16 38 40Z" fill="url(#leaf)" opacity=".9" />
+              <path d="M96 400c24-8 32-26 30-44-22 6-30 22-30 44Z" fill="url(#leaf)" opacity=".8" />
+              <path d="M96 386c-16-10-18-28-14-42 16 8 20 24 14 42Z" fill="url(#leaf)" opacity=".65" />
+              <path d="M76 448h40l-6-30H82z" fill="#f0b79f" />
+            </g>
+
+            <circle cx="440" cy="150" r="44" fill="url(#peachblob)" opacity=".3" />
+            <circle cx="440" cy="150" r="17" fill="url(#peachblob)" opacity=".65" />
+
+            <g stroke="#6c55d9" stroke-width="2" stroke-linecap="round" opacity=".3">
+              <path d="M84 214v-18M75 205h18" />
+              <path d="M452 322v-14M445 315h14" />
+              <path d="M330 96v-12M324 90h12" />
+            </g>
+            <g fill="#6c55d9" opacity=".16">
+              <circle cx="60" cy="272" r="3" /><circle cx="120" cy="60" r="3" /><circle cx="470" cy="250" r="3" /><circle cx="352" cy="430" r="3" />
+            </g>
+          </svg>
+        </div>
+
+        <div class="float-card top">
+          <span class="avatar">DA</span>
+          <div>
+            <div class="kicker">Next available</div>
+            <div class="value">Dr Ade · Tomorrow</div>
+            <div class="sub">09:00 – 09:30 · In-clinic</div>
+          </div>
+        </div>
+
+        <div class="float-card bottom">
+          <span class="avatar mint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <div>
+            <div class="kicker">Booking confirmed</div>
+            <div class="value">Reference sent instantly</div>
+            <div class="sub"><span class="live-pill">Slot held securely</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section services" id="services">
+    <div class="shell">
+      <div class="section-head">
+        <span class="eyebrow"><span class="dot"></span> Our services</span>
+        <h2>Care for every part of your life</h2>
+        <p class="lead">From a quick consult to ongoing specialist care, our clinicians cover the moments that matter — and you can see their real availability before you commit.</p>
+      </div>
+      <div class="card-grid">
+        <a class="service-card tint-lav" href="/book.html?service=general">
+          <span class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7.5v9a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-9"/><path d="M8 7.5V6a4 4 0 0 1 8 0v1.5"/><path d="M12 11v4M10 13h4"/></svg></span>
+          <h3>General Consultation</h3>
+          <p>Everyday health concerns, prescriptions and referrals from a clinician who knows your history.</p>
+          <span class="link-arrow">Book appointment <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="service-card tint-mint" href="/book.html?service=family">
+          <span class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M15 19a4 4 0 0 1 5.5-3.4"/></svg></span>
+          <h3>Family Medicine</h3>
+          <p>One trusted clinician for the whole household, with appointments that fit around school and work.</p>
+          <span class="link-arrow">Book appointment <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="service-card tint-peach" href="/book.html?service=dental">
+          <span class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5c-2-1.4-5.5-1.2-5.5 2.4 0 2 .8 3.2 1.2 5.2.3 1.6.2 4.1 1.7 4.1 1.4 0 1.1-3 2.6-3s1.2 3 2.6 3c1.5 0 1.4-2.5 1.7-4.1.4-2 1.2-3.2 1.2-5.2C17.5 3.8 14 3.6 12 5Z"/></svg></span>
+          <h3>Dental Care</h3>
+          <p>Check-ups, hygiene and restorative care with gentle, transparent treatment plans.</p>
+          <span class="link-arrow">Book appointment <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="service-card tint-sky" href="/book.html?service=mental">
+          <span class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-6-3.6-6-8a3.5 3.5 0 0 1 6-2.4A3.5 3.5 0 0 1 18 12c0 4.4-6 8-6 8Z"/></svg></span>
+          <h3>Mental Health</h3>
+          <p>Confidential talking therapy and wellbeing support, in person or from home.</p>
+          <span class="link-arrow">Book appointment <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="service-card tint-sand" href="/book.html?service=paeds">
+          <span class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="4.2"/><path d="M10 8.4h.01M14 8.4h.01M10.5 11c.8.7 2.2.7 3 0"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>
+          <h3>Paediatrics</h3>
+          <p>Unhurried appointments for babies, children and teenagers, with parents in the room.</p>
+          <span class="link-arrow">Book appointment <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="service-card tint-rose" href="/book.html?service=specialist">
+          <span class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v5a6 6 0 0 0 12 0V4"/><path d="M12 15v5"/><path d="M9 20h6"/><path d="M18 8h2a2 2 0 0 1 0 4h-2"/></svg></span>
+          <h3>Specialist Consultation</h3>
+          <p>Cardiology, dermatology, physiotherapy and more, without the referral runaround.</p>
+          <span class="link-arrow">Book appointment <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="shell">
+      <div class="section-head">
+        <span class="eyebrow"><span class="dot"></span> How it works</span>
+        <h2>Three calm steps to a confirmed visit</h2>
+      </div>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div>
+            <h3>Choose a service</h3>
+            <p>Tell us what you need and we will show the clinicians who can help, along with their real diary.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div>
+            <h3>Select an available time</h3>
+            <p>Availability is live. Pick a date and a time that works — taken slots are visibly closed.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div>
+            <h3>Confirm your appointment</h3>
+            <p>Add your details, review everything, and get a booking reference you can manage any time.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section trust" id="about">
+    <div class="shell trust-grid">
       <div>
-        <label for="name">Full name</label>
-        <input id="name" placeholder="Ada Lovelace" autocomplete="name" />
+        <span class="eyebrow"><span class="dot"></span> Why Haven</span>
+        <h2 style="font-size:clamp(1.9rem,3.4vw,2.7rem);margin-top:16px">Built around the person, not the paperwork</h2>
+        <p class="lead" style="margin-top:14px">We designed Haven with clinicians and patients together, so booking feels less like admin and more like being looked after.</p>
+        <div class="feature-list">
+          <div class="feature">
+            <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <div>
+              <h3>Quality healthcare</h3>
+              <p>Every clinician is registered and reviewed, with appointment lengths that leave room for real conversations.</p>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg></span>
+            <div>
+              <h3>Patient privacy</h3>
+              <p>Your details are used only to hold your appointment, and they are never sold or shared with advertisers.</p>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
+            <div>
+              <h3>Convenient scheduling</h3>
+              <p>See what is genuinely free right now, book in seconds, and cancel from the same page if plans change.</p>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h9M4 12h6M4 18h5"/><path d="M16 7l4 4-7 7-3 .6.6-3z"/></svg></span>
+            <div>
+              <h3>Reliable management</h3>
+              <p>One reference, one place. Look up your visits, check the status, and keep your record tidy.</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div>
-        <label for="email">Email</label>
-        <input id="email" type="email" placeholder="ada@example.com" autocomplete="email" />
+      <div class="stat-panel">
+        <div class="stat"><strong>4.9/5</strong><span>Average patient rating</span></div>
+        <div class="stat"><strong>&lt; 60s</strong><span>To a confirmed booking</span></div>
+        <div class="stat"><strong>0</strong><span>Double-booked slots, ever</span></div>
+        <div class="stat"><strong>24/7</strong><span>Self-service rescheduling</span></div>
+        <div class="stat tall">
+          <span class="avatar mint" style="width:52px;height:52px;border-radius:16px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px"><path d="M12 20s-6-3.6-6-8a3.5 3.5 0 0 1 6-2.4A3.5 3.5 0 0 1 18 12c0 4.4-6 8-6 8Z"/></svg>
+          </span>
+          <div>
+            <strong>Care that remembers you</strong>
+            <span>Clinicians see your previous visits, so you never start from scratch.</span>
+          </div>
+        </div>
       </div>
     </div>
-    <div id="banner" class="banner" role="status"></div>
-  </div>
+  </section>
 
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-      <h2 style="margin:0">Available slots</h2>
-      <div style="display:flex;gap:8px">
-        <button class="ghost" id="refresh">Refresh</button>
-        <button class="ghost" id="more-slots">Load more slots</button>
+  <section class="cta-band" id="contact">
+    <div class="shell">
+      <div class="cta-card">
+        <div>
+          <h2>Your next appointment is a minute away</h2>
+          <p>Find a time that fits your week. If plans change, you can cancel or review your booking from the appointments page at any time.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btn-primary" href="/book.html">Book an appointment</a>
+          <a class="btn btn-ghost" href="/appointments.html">Manage a booking</a>
+        </div>
       </div>
     </div>
-    <div id="slots"><p class="empty">Loading…</p></div>
-  </div>
-
-  <div class="card">
-    <h2>My bookings</h2>
-    <div id="bookings"><p class="empty">Enter your email and press “Load bookings”.</p></div>
-    <div style="margin-top:12px">
-      <button class="ghost" id="load-bookings">Load bookings</button>
-    </div>
-  </div>
-
-  <p><code id="api-info"></code></p>
+  </section>
 </main>
 
-<script>
-  const API_KEY = "clinic-book-api-key-2026";
-  const API = "/";
+<footer class="footer">
+  <div class="shell">
+    <div class="footer-top">
+      <div>
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+          </span>
+          Haven<span style="color:#9fdcbe">Health</span>
+        </a>
+        <p class="footer-note">Calm, modern clinic care with booking that respects your time.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/book.html">Find an appointment</a></li>
+          <li><a href="/appointments.html">Manage a booking</a></li>
+          <li><a href="#services">Our services</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Services</h4>
+        <ul>
+          <li><a href="/book.html?service=general">General consultation</a></li>
+          <li><a href="/book.html?service=family">Family medicine</a></li>
+          <li><a href="/book.html?service=dental">Dental care</a></li>
+          <li><a href="/book.html?service=mental">Mental health</a></li>
+          <li><a href="/book.html?service=paeds">Paediatrics</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:hello@havenhealth.example">hello@havenhealth.example</a></li>
+          <li><a href="tel:+18005550100">+1 (800) 555-0100</a></li>
+          <li>18 Willow Lane, Suite 200</li>
+          <li>Mon – Sat, 8:00 – 18:00</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span data-year>2026</span> Haven Health. All rights reserved.</span>
+      <span style="display:flex;gap:18px;flex-wrap:wrap">
+        <a href="#contact">Privacy Policy</a>
+        <a href="#contact">Terms of Service</a>
+        <a href="#contact">Accessibility</a>
+      </span>
+    </div>
+  </div>
+</footer>
 
-  const $ = (id) => document.getElementById(id);
-  const nameEl = $("name");
-  const emailEl = $("email");
-  const banner = $("banner");
-  // Slot details for booking rows; entries survive slot-list refreshes so old
-  // bookings still show their provider and time.
-  const slotCache = new Map();
-
-  $("api-info").textContent = "API base: " + location.origin;
-
-  function show(kind, msg) {
-    banner.className = "banner " + kind;
-    banner.textContent = msg;
-    if (kind === "ok") setTimeout(() => { banner.className = "banner"; }, 4000);
-  }
-
-  async function api(path, opts = {}) {
-    const res = await fetch(API + path, {
-      ...opts,
-      headers: {
-        "X-API-Key": API_KEY,
-        "Content-Type": "application/json",
-        ...(opts.headers || {}),
-      },
-    });
-    let body = null;
-    try { body = await res.json(); } catch (_) {}
-    if (!res.ok) {
-      const err = new Error((body && body.error) || "Request failed");
-      err.status = res.status;
-      err.body = body;
-      throw err;
-    }
-    return body;
-  }
-
-  function fmt(iso) {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString(undefined, {
-      weekday: "short", month: "short", day: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
-  }
-
-  function timeOnly(iso) {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function messageFor(err) {
-    if (err.status === 429) {
-      const s = err.body && err.body.retry_after;
-      return "Too many attempts. Try again in " + (s ? s + "s" : "a minute") + ".";
-    }
-    if (err.status === 409) return "That slot is already booked.";
-    if (err.status === 404) return "Not found.";
-    if (err.status === 401) return "API key rejected.";
-    return err.message || "Something went wrong.";
-  }
-
-  async function loadSlots() {
-    const box = $("slots");
-    box.innerHTML = '<p class="empty">Loading…</p>';
-    try {
-      const data = await api("slots");
-      for (const s of data.slots || []) slotCache.set(s.id, s);
-      if (!data.slots || !data.slots.length) {
-        box.innerHTML = '<p class="empty">No slots available.</p>';
-        return;
-      }
-      box.innerHTML = "";
-      for (const s of data.slots) {
-        const row = document.createElement("div");
-        row.className = "slot" + (s.available ? "" : " booked");
-        row.innerHTML =
-          '<div class="meta"><div class="when">' + fmt(s.start) + " – " +
-          new Date(s.end).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) +
-          "</div><div>" + s.provider + "</div></div>";
-        const btn = document.createElement("button");
-        btn.textContent = s.available ? "Book" : "Booked";
-        btn.disabled = !s.available;
-        btn.addEventListener("click", () => book(s.id, btn));
-        row.appendChild(btn);
-        box.appendChild(row);
-      }
-    } catch (err) {
-      box.innerHTML = '<p class="empty">Could not load slots.</p>';
-      show("err", messageFor(err));
-    }
-  }
-
-  async function book(slotId, btn) {
-    const name = nameEl.value.trim();
-    const email = emailEl.value.trim();
-    if (!name || !email) {
-      show("err", "Enter your name and email first.");
-      return;
-    }
-    btn.disabled = true;
-    btn.textContent = "Booking…";
-    try {
-      const b = await api("bookings", {
-        method: "POST",
-        body: JSON.stringify({ slot_id: slotId, name, email }),
-        headers: { "Idempotency-Key": crypto.randomUUID() },
-      });
-      show("ok", "Booked! Confirmation " + b.id.slice(0, 8) + " for " + fmt(b.created_at));
-      await loadSlots();
-      await loadBookings();
-    } catch (err) {
-      show("err", messageFor(err));
-      btn.disabled = false;
-      btn.textContent = "Book";
-    }
-  }
-
-  async function loadBookings() {
-    const email = emailEl.value.trim();
-    const box = $("bookings");
-    if (!email) {
-      show("err", "Enter your email to load bookings.");
-      return;
-    }
-    box.innerHTML = '<p class="empty">Loading…</p>';
-    try {
-      // Provider and start time live on the slot, so make sure we have them.
-      if (!slotCache.size) await loadSlots();
-      const data = await api("bookings?email=" + encodeURIComponent(email));
-      if (!data.bookings || !data.bookings.length) {
-        box.innerHTML = '<p class="empty">No bookings for this email yet.</p>';
-        return;
-      }
-      box.innerHTML = "";
-      for (const b of data.bookings) {
-        const row = document.createElement("div");
-        row.className = "booking";
-        const status = b.status === "cancelled"
-          ? '<span class="pill cancelled">cancelled</span>'
-          : '<span class="pill">confirmed</span>';
-        const slot = slotCache.get(b.slot_id);
-        const heading = slot ? slot.provider : b.slot_id;
-        const when = slot
-          ? fmt(slot.start) + " – " + timeOnly(slot.end)
-          : "Time unavailable";
-        row.innerHTML =
-          "<div><strong>" + heading + "</strong> " + status +
-          '<div class="empty">' + when + "</div></div>";
-        if (b.status !== "cancelled") {
-          const btn = document.createElement("button");
-          btn.className = "danger";
-          btn.textContent = "Cancel";
-          btn.addEventListener("click", () => cancel(b.id, btn));
-          row.appendChild(btn);
-        }
-        box.appendChild(row);
-      }
-    } catch (err) {
-      box.innerHTML = '<p class="empty">Could not load bookings.</p>';
-      show("err", messageFor(err));
-    }
-  }
-
-  async function cancel(id, btn) {
-    btn.disabled = true;
-    try {
-      await api("bookings/" + encodeURIComponent(id), { method: "DELETE" });
-      show("ok", "Booking cancelled.");
-      await loadBookings();
-      await loadSlots();
-    } catch (err) {
-      show("err", messageFor(err));
-      btn.disabled = false;
-    }
-  }
-
-  async function loadMoreSlots() {
-    const btn = $("more-slots");
-    btn.disabled = true;
-    btn.textContent = "Adding…";
-    try {
-      const data = await api("demo-slots", { method: "POST" });
-      show("ok", "Added " + data.added + " more slots.");
-      await loadSlots();
-    } catch (err) {
-      show("err", messageFor(err));
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Load more slots";
-    }
-  }
-
-  $("refresh").addEventListener("click", loadSlots);
-  $("more-slots").addEventListener("click", loadMoreSlots);
-  $("load-bookings").addEventListener("click", loadBookings);
-  loadSlots();
-</script>
+<script src="/assets/site.js"></script>
 </body>
 </html>

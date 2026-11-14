@@ -4,7 +4,16 @@ const { Pool } = require("pg");
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+
+// Browser-facing proxy: the API key stays on the server. The UI calls /api/*
+// and we inject the key so the existing handlers/auth still apply unchanged.
+app.use((req, _res, next) => {
+  if (req.path === "/api" || req.path.startsWith("/api/")) {
+    req.headers["x-api-key"] = API_KEY;
+    req.url = req.originalUrl.slice(4) || "/";
+  }
+  next();
+});
 
 const API_KEY = process.env.API_KEY || "clinic-book-api-key-2026";
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -515,6 +524,9 @@ app.delete(
     return res.json(await getBooking(booking.id));
   })
 );
+
+// Static site (after API routes so /api/* never resolves to files).
+app.use(express.static(path.join(__dirname, "public")));
 
 // JSON 404/500 instead of Express HTML error pages.
 app.use((req, res) => res.status(404).json({ error: "not found" }));

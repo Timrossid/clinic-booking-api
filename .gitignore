@@ -5,3 +5,4 @@ node_modules/
 cloudflared.exe
 npm-debug.log*
 .env
+.screens/
