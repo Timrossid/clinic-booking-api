@@ -1,6 +1,29 @@
 const path = require("path");
+const crypto = require("crypto");
 const express = require("express");
 const { Pool } = require("pg");
+
+const DATABASE_URL = process.env.DATABASE_URL;
+const API_KEY = process.env.API_KEY;
+
+if (!DATABASE_URL) {
+  console.error("DATABASE_URL is required (PostgreSQL connection string).");
+  process.exit(1);
+}
+if (!API_KEY) {
+  console.error("API_KEY is required.");
+  process.exit(1);
+}
+
+// Render's managed Postgres presents a certificate we do not verify here;
+// local connections skip TLS entirely.
+const isLocalDb = /(^|@)(localhost|127\.0\.0\.1)/.test(DATABASE_URL);
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: isLocalDb ? false : { rejectUnauthorized: false },
+  max: 5,
+  idleTimeoutMillis: 10000,
+});
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
@@ -13,24 +36,6 @@ app.use((req, _res, next) => {
     req.url = req.originalUrl.slice(4) || "/";
   }
   next();
-});
-
-const API_KEY = process.env.API_KEY || "clinic-book-api-key-2026";
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("DATABASE_URL is required (PostgreSQL connection string).");
-  process.exit(1);
-}
-
-// Render's managed Postgres presents a certificate we do not verify here;
-// local connections skip TLS entirely.
-const isLocalDb = /(^|@)(localhost|127\.0\.0\.1)/.test(DATABASE_URL);
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: isLocalDb ? false : { rejectUnauthorized: false },
-  max: 5,
-  idleTimeoutMillis: 10000,
 });
 
 const RATE_LIMIT_MAX = 5;
@@ -70,12 +75,13 @@ const SCHEMA = `
     booking_id TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
+  ALTER TABLE idempotency ADD COLUMN IF NOT EXISTS slot_id TEXT;
+  ALTER TABLE idempotency ADD COLUMN IF NOT EXISTS name TEXT;
+  ALTER TABLE idempotency ADD COLUMN IF NOT EXISTS email TEXT;
 `;
 
 const DEMO_PROVIDERS = ["Dr Ade", "Dr Bello", "Dr Chen"];
 
-// Adds nine future slots scheduled after the last existing slot, leaving every
-// existing slot and booking untouched. Returns how many were inserted.
 async function insertDemoSlots() {
   const { rows } = await pool.query("SELECT max(start_at) AS latest FROM slots");
   const latest = rows[0] && rows[0].latest ? new Date(rows[0].latest) : new Date();
@@ -110,8 +116,6 @@ async function insertDemoSlots() {
   return i;
 }
 
-// A fresh database (or one whose slots are all taken) would leave the web page
-// with nothing to click, so top it up whenever no bookable slot exists.
 async function seedDemoSlotsIfEmpty() {
   const { rows } = await pool.query(
     `SELECT count(*)::int AS n FROM slots s
@@ -128,10 +132,6 @@ async function seedDemoSlotsIfEmpty() {
 async function initDb() {
   await pool.query(SCHEMA);
   await seedDemoSlotsIfEmpty();
-}
-
-function nowIso() {
-  return new Date().toISOString();
 }
 
 let idCounter = 0;
@@ -216,6 +216,25 @@ function send(res, status, payload) {
   return res.status(status).json(payload);
 }
 
+function idemLockKey(key) {
+  const h = crypto.createHash("sha256").update(key).digest();
+  // Two signed 32-bit ints for pg_advisory_xact_lock(int,int)
+  return [h.readInt32BE(0), h.readInt32BE(4)];
+}
+
+function sameIdemRequest(row, body) {
+  return (
+    row &&
+    row.slot_id === body.slot_id &&
+    row.name === body.name &&
+    row.email === body.email
+  );
+}
+
+function idemMismatch() {
+  return { error: "idempotency key reuse with different request" };
+}
+
 // --- /reset ---------------------------------------------------------------
 app.post(
   "/reset",
@@ -294,7 +313,6 @@ app.get(
 );
 
 // --- POST /demo-slots -----------------------------------------------------
-// Appends fresh demo slots without changing existing slots or bookings.
 app.post(
   "/demo-slots",
   requireAuth,
@@ -318,17 +336,17 @@ app.post(
     if (!email) return send(res, 400, { error: "missing email" });
     if (!validEmail(email)) return send(res, 400, { error: "invalid email" });
 
-    // Idempotency replay comes first so a retried request is never charged
-    // against the rate limit or reported as a conflict.
     const idemKey = req.headers["idempotency-key"];
     const idem = typeof idemKey === "string" && idemKey.trim() ? idemKey.trim() : null;
 
+    // Fast path: replay an identical request without consuming rate limit.
     if (idem) {
       const prior = await pool.query(
-        "SELECT booking_id FROM idempotency WHERE key = $1",
+        "SELECT booking_id, slot_id, name, email FROM idempotency WHERE key = $1",
         [idem]
       );
       if (prior.rowCount) {
+        if (!sameIdemRequest(prior.rows[0], body)) return send(res, 409, idemMismatch());
         const replay = await getBooking(prior.rows[0].booking_id);
         if (replay) return res.status(201).json(replay);
       }
@@ -341,6 +359,22 @@ app.post(
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+
+      if (idem) {
+        const [k1, k2] = idemLockKey(idem);
+        await client.query("SELECT pg_advisory_xact_lock($1::int, $2::int)", [k1, k2]);
+        const prior = await client.query(
+          "SELECT booking_id, slot_id, name, email FROM idempotency WHERE key = $1",
+          [idem]
+        );
+        if (prior.rowCount) {
+          await client.query("ROLLBACK");
+          if (!sameIdemRequest(prior.rows[0], body)) return send(res, 409, idemMismatch());
+          const replay = await getBooking(prior.rows[0].booking_id);
+          if (replay) return res.status(201).json(replay);
+          return send(res, 409, { error: "slot already booked" });
+        }
+      }
 
       // Rate limit per email: 5 requests / 60s. The row lock serialises
       // concurrent attempts for the same email so the count is exact.
@@ -414,33 +448,31 @@ app.post(
 
       if (idem) {
         const claimed = await client.query(
-          `INSERT INTO idempotency (key, booking_id) VALUES ($1, $2)
+          `INSERT INTO idempotency (key, booking_id, slot_id, name, email)
+           VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (key) DO NOTHING
            RETURNING booking_id`,
-          [idem, id]
+          [idem, id, slot_id, name, email]
         );
         if (claimed.rowCount === 0) {
-          // A concurrent request with the same key won the race.
           await client.query("ROLLBACK");
           const prior = await pool.query(
-            "SELECT booking_id FROM idempotency WHERE key = $1",
+            "SELECT booking_id, slot_id, name, email FROM idempotency WHERE key = $1",
             [idem]
           );
-          const replay = prior.rowCount
-            ? await getBooking(prior.rows[0].booking_id)
-            : null;
-          if (replay) return res.status(201).json(replay);
+          if (prior.rowCount) {
+            if (!sameIdemRequest(prior.rows[0], body)) return send(res, 409, idemMismatch());
+            const replay = await getBooking(prior.rows[0].booking_id);
+            if (replay) return res.status(201).json(replay);
+          }
           return send(res, 409, { error: "slot already booked" });
         }
       }
 
       await client.query("COMMIT");
-
-      const created = await getBooking(id);
-      return res.status(201).json(created);
+      return res.status(201).json(await getBooking(id));
     } catch (err) {
       await client.query("ROLLBACK").catch(() => {});
-      // The partial unique index is the final guard against double booking.
       if (err && err.code === "23505") {
         return send(res, 409, { error: "slot already booked" });
       }
@@ -469,23 +501,29 @@ app.get(
     }
 
     const cursor = typeof req.query.cursor === "string" ? req.query.cursor : null;
-    const { rows } = cursor
-      ? await pool.query(
-          `SELECT ${BOOKING_COLUMNS} FROM bookings
-           WHERE email = $1 AND seq > COALESCE(
-             (SELECT seq FROM bookings WHERE id = $2), 9223372036854775807
-           )
-           ORDER BY seq ASC
-           LIMIT $3`,
-          [email, cursor, limit + 1]
-        )
-      : await pool.query(
-          `SELECT ${BOOKING_COLUMNS} FROM bookings
-           WHERE email = $1
-           ORDER BY seq ASC
-           LIMIT $2`,
-          [email, limit + 1]
-        );
+    let rows;
+    if (cursor) {
+      const cur = await pool.query(
+        "SELECT seq FROM bookings WHERE id = $1 AND email = $2",
+        [cursor, email]
+      );
+      if (!cur.rowCount) return send(res, 400, { error: "invalid cursor" });
+      ({ rows } = await pool.query(
+        `SELECT ${BOOKING_COLUMNS} FROM bookings
+         WHERE email = $1 AND seq > $2
+         ORDER BY seq ASC
+         LIMIT $3`,
+        [email, cur.rows[0].seq, limit + 1]
+      ));
+    } else {
+      ({ rows } = await pool.query(
+        `SELECT ${BOOKING_COLUMNS} FROM bookings
+         WHERE email = $1
+         ORDER BY seq ASC
+         LIMIT $2`,
+        [email, limit + 1]
+      ));
+    }
 
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
@@ -513,15 +551,17 @@ app.delete(
   "/bookings/:id",
   requireAuth,
   asyncHandler(async (req, res) => {
+    const result = await pool.query(
+      `UPDATE bookings SET status = 'cancelled'
+       WHERE id = $1 AND status = 'confirmed'
+       RETURNING ${BOOKING_COLUMNS}`,
+      [req.params.id]
+    );
+    if (result.rowCount) return res.json(shapeBooking(result.rows[0]));
+
     const booking = await getBooking(req.params.id);
     if (!booking) return send(res, 404, { error: "booking not found" });
-    if (booking.status === "cancelled") {
-      return send(res, 409, { error: "already cancelled" });
-    }
-    await pool.query("UPDATE bookings SET status = 'cancelled' WHERE id = $1", [
-      booking.id,
-    ]);
-    return res.json(await getBooking(booking.id));
+    return send(res, 409, { error: "already cancelled" });
   })
 );
 

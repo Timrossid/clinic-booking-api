@@ -1,99 +1,188 @@
 # Clinic Booking API
 
-Appointment booking API built with Node.js + Express 5 and PostgreSQL.
-Includes a small web UI served from the same process.
+Appointment booking API built with Node.js, Express 5, and PostgreSQL, with a small web UI served by the same process.
+
+- **Live app & API:** https://clinic-booking-api-kg0q.onrender.com
+- **Repository:** https://github.com/Timrossid/clinic-booking-api
+
+## Requirements
+
+- Node.js 18+ (Node 20+ recommended; the test suite uses `node --test`)
+- PostgreSQL
+- Environment variables:
+  - `DATABASE_URL` (required): PostgreSQL connection string
+  - `API_KEY` (required): secret key expected in the `X-API-Key` request header
+  - `PORT` (optional, default `3000`)
+
+The server exits on startup if `DATABASE_URL` or `API_KEY` is missing. Tables are created/migrated automatically on boot.
 
 ## Run locally
 
 ```bash
 npm install
-DATABASE_URL="postgresql://user:pass@host:5432/dbname" API_KEY=test-key-123 node server.js
+DATABASE_URL="postgresql://user:pass@host:5432/dbname" API_KEY="your-secret-key" npm start
 # open http://localhost:3000
 ```
 
-`DATABASE_URL` is required; tables are created automatically on boot. `API_KEY` defaults
-to `clinic-book-api-key-2026` when unset. `PORT` defaults to `3000`.
+## Authentication
+
+Every API endpoint requires:
+
+```http
+X-API-Key: <your API key>
+```
+
+Missing or invalid keys return `401` with `{ "error": "unauthorized" }`.
+
+The bundled web UI calls same-origin `/api/*` paths. A server-side middleware strips the `/api` prefix and injects `X-API-Key` from the server environment, so the key is never exposed to browser code.
 
 ## Endpoints
 
-All endpoints require the header `X-API-Key: <key>`; missing/invalid keys return `401`.
-
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/reset` | Replace all data with the provided `slots` array |
-| GET | `/slots` | List slots (optional `?provider=`) with `available` flag |
-| POST | `/demo-slots` | Append nine future demo slots without touching bookings |
-| POST | `/bookings` | Create a booking |
-| GET | `/bookings?email=...` | List a user's bookings (cursor paginated) |
-| GET | `/bookings/{id}` | Fetch one booking |
-| DELETE | `/bookings/{id}` | Cancel a booking |
+| `POST` | `/reset` | Replace all data with the provided `slots` array |
+| `GET` | `/slots` | List slots (optional `?provider=` filter) with `available` flag |
+| `POST` | `/demo-slots` | Append future demo slots without changing existing slots/bookings |
+| `POST` | `/bookings` | Create a booking |
+| `GET` | `/bookings?email=...` | List bookings for an email (cursor paginated) |
+| `GET` | `/bookings/{id}` | Fetch one booking |
+| `DELETE` | `/bookings/{id}` | Cancel a booking |
 
-### POST /reset
+### `POST /reset`
 
-```json
-{ "slots": [ { "id": "s1", "provider": "Dr Ade",
-               "start": "2026-12-10T09:00:00Z", "end": "2026-12-10T09:30:00Z" } ] }
-```
-
-Responds `{ "done": true }`.
-
-### POST /bookings
+Body:
 
 ```json
-{ "slot_id": "s1", "name": "Ada Lovelace", "email": "ada@example.com" }
+{
+  "slots": [
+    {
+      "id": "s1",
+      "provider": "Dr Ade",
+      "start": "2026-12-10T09:00:00Z",
+      "end": "2026-12-10T09:30:00Z"
+    }
+  ]
+}
 ```
 
-- `201` with the booking object on success
-- `400` on missing/invalid fields
-- `404` if the slot does not exist
-- `409` if the slot is already booked
-- `422` if the slot start time is in the past
-- `429` with `Retry-After` when an email sends more than 5 booking requests in 60 seconds
+- `200` `{ "done": true }` on success
+- `400` `{ "error": "invalid_slots" }` for an invalid payload
 
-Optional `Idempotency-Key` header: repeating the same key returns the original booking
-instead of creating a new one.
+Resets slots, bookings, rate limits, and idempotency records.
 
-### GET /bookings
+### `GET /slots`
 
-`?email=` is required. `limit` defaults to 10 (1–50). Pass the returned `next_cursor`
-as `cursor` to fetch the next page; `next_cursor` is `null` on the last page.
+- Optional query: `provider`
+- `200` `{ "slots": [ { "id", "provider", "start", "end", "available" } ] }`
+- `available` is `false` when the slot has a confirmed booking
 
-### DELETE /bookings/{id}
+### `POST /demo-slots`
 
-Returns the cancelled booking. Cancelling twice returns `409`.
+- `201` `{ "added": <number> }`
+- Appends demo slots after the latest existing slot; does not remove bookings
+
+### `POST /bookings`
+
+Body:
+
+```json
+{
+  "slot_id": "s1",
+  "name": "Ada Lovelace",
+  "email": "ada@example.com"
+}
+```
+
+Optional header: `Idempotency-Key: <key>`
+
+Success: `201` with the booking object
+
+```json
+{
+  "id": "…",
+  "slot_id": "s1",
+  "name": "Ada Lovelace",
+  "email": "ada@example.com",
+  "status": "confirmed",
+  "created_at": "2026-01-01T12:00:00.000Z"
+}
+```
+
+Errors:
+- `400` missing/invalid body, `slot_id`, `name`, or `email`
+- `404` `{ "error": "slot not found" }`
+- `409` `{ "error": "slot already booked" }`
+- `409` `{ "error": "idempotency key reuse with different request" }` when the same `Idempotency-Key` is sent with a different booking payload
+- `422` `{ "error": "slot is in the past" }`
+- `429` `{ "error": "too many requests", "retry_after": <seconds> }` with a `Retry-After` header when an email exceeds 5 booking attempts in 60 seconds
+
+Idempotency: repeating the same `Idempotency-Key` with the **same** request payload returns the original booking (`201`) without creating a duplicate.
+
+### `GET /bookings`
+
+- Required query: `email`
+- Optional: `limit` (default `10`, allowed `1`–`50`), `cursor`
+- `200` `{ "bookings": [ ... ], "next_cursor": "<id>" | null }`
+- `400` for missing/invalid `email`, invalid `limit`, or an invalid cursor
+- A cursor is only valid for the same `email` that owns the referenced booking
+
+### `GET /bookings/{id}`
+
+- `200` booking object
+- `404` `{ "error": "booking not found" }`
+
+### `DELETE /bookings/{id}`
+
+- `200` cancelled booking object (`status: "cancelled"`)
+- `404` `{ "error": "booking not found" }`
+- `409` `{ "error": "already cancelled" }`
+
+Cancellation is handled atomically so only one concurrent cancel request succeeds.
+
+## Behaviour notes
+
+- **Double-booking prevention:** confirmed bookings are protected by a partial unique index on `bookings(slot_id)` where `status = 'confirmed'`, with conflict handling to guarantee a single `201` under concurrency.
+- **Idempotency:** keys are stored with the request payload (`slot_id`, `name`, normalized `email`) and replay only for identical requests; reuse with different data is rejected.
+- **Rate limiting:** 5 booking attempts per email per 60-second window, enforced transactionally with a `Retry-After` response on `429`.
+- **Pagination:** cursor-based (`next_cursor`), scoped to the requested email.
+- **Persistence:** all state is stored in PostgreSQL and survives restarts/redeploys.
+
+## Automated tests
+
+The test suite covers all five assessment levels (reset/slots/booking flow, auth & validation, double-booking & cancellation, idempotency & pagination, rate limiting) plus cursor scoping, idempotency mismatch rejection, and concurrent cancellation.
+
+```bash
+npm install
+DATABASE_URL="postgresql://user:pass@host:5432/dbname" \
+API_KEY="your-secret-key" \
+PORT=3011 \
+npm start
+# in another shell:
+BASE_URL="http://127.0.0.1:3011" API_KEY="your-secret-key" npm test
+```
+
+Notes:
+- `POST /reset` is **destructive** (it clears slots/bookings/rate-limits/idempotency). Run tests against a disposable/local database or a dedicated test environment, not against production data.
+- `BASE_URL` defaults to `http://127.0.0.1:3011`.
 
 ## Web app
 
-Three static pages are served from `public/` by the same process, so the page and the
-API share an origin:
+Three static pages are served from `public/` on the same origin as the API:
 
 | Page | Path |
 | --- | --- |
 | Home (hero, services, how it works, trust) | `/` |
 | Five-step booking wizard | `/book.html` |
-| Look up, check or cancel bookings | `/appointments.html` |
+| Look up, check, or cancel bookings | `/appointments.html` |
 
-No build step and no framework: plain HTML, CSS and ES modules. Plus Jakarta Sans for
-headings and Inter for body text, inline SVG icons.
+No build step. The UI uses live `/api/*` data (no hardcoded appointment data) and the server injects the API key; the browser never receives it.
 
-The browser never sees the API key. UI code calls `/api/*`; a top-level Express
-middleware strips the `/api` prefix and injects `X-API-Key` server-side before the
-existing handlers run, so auth and every status code behave exactly as documented
-below. Availability, booking, lookup and cancellation all read live data — there is no
-sample appointment data in the front end.
+## Deploy (Render)
 
-## Behaviour notes
+`Dockerfile` and `render.yaml` are included.
 
-- Bookings are guarded by a unique check on confirmed bookings per slot, so concurrent
-  requests for the same slot result in exactly one `201` and the rest `409`.
-- State lives in PostgreSQL, so slots and bookings survive restarts and redeploys.
-  A partial unique index (`uniq_confirmed_slot`) is the final guard against double
-  booking, backed by an advisory row lock on the per-email rate-limit counter.
+- `DATABASE_URL` is wired from the `clinic-booking-db` blueprint database.
+- `API_KEY` is marked `sync: false` in `render.yaml` — set/rotate it in the Render service environment (or via the Render API) and **never commit a real key**. After changing `API_KEY`, redeploy so the running instance picks it up.
+- Health check path: `/`
 
-## Deploy
-
-Live at **https://clinic-booking-api-kg0q.onrender.com** (page and API on the same origin).
-
-`Dockerfile` and `render.yaml` are included. On Render the Web Service needs two env vars:
-`API_KEY` and `DATABASE_URL` (the Postgres internal connection string). `render.yaml`
-wires the second one from the `clinic-booking-db` database declared in the same blueprint.
+The live deployment is https://clinic-booking-api-kg0q.onrender.com.
