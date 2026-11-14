@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: node server.js
-    healthCheckPath: /slots
+    healthCheckPath: /
     envVars:
       - key: API_KEY
         value: clinic-book-api-key-2026
