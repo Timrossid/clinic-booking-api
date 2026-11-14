@@ -63,8 +63,58 @@ const SCHEMA = `
   );
 `;
 
+const DEMO_PROVIDERS = ["Dr Ade", "Dr Bello", "Dr Chen"];
+
+// A fresh database (or one whose slots are all taken) would leave the web page
+// with nothing to click, so top it up whenever no bookable slot exists.
+async function seedDemoSlotsIfEmpty() {
+  const { rows } = await pool.query(
+    `SELECT count(*)::int AS n FROM slots s
+     WHERE s.start_at > now()
+       AND NOT EXISTS (
+         SELECT 1 FROM bookings b
+         WHERE b.slot_id = s.id AND b.status = 'confirmed'
+       )`
+  );
+  if (rows[0].n > 0) return;
+
+  const stamp = Date.now();
+  const today = new Date();
+  let i = 0;
+  for (let day = 1; day <= 3; day++) {
+    for (const hour of [9, 11, 14]) {
+      const start = new Date(
+        Date.UTC(
+          today.getUTCFullYear(),
+          today.getUTCMonth(),
+          today.getUTCDate() + day,
+          hour,
+          0,
+          0,
+          0
+        )
+      );
+      const end = new Date(start.getTime() + 30 * 60000);
+      await pool.query(
+        `INSERT INTO slots (id, provider, start_text, end_text, start_at)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          `demo-${stamp}-${i++}`,
+          DEMO_PROVIDERS[i % DEMO_PROVIDERS.length],
+          start.toISOString(),
+          end.toISOString(),
+          start.toISOString(),
+        ]
+      );
+    }
+  }
+  console.log("seeded demo slots");
+}
+
 async function initDb() {
   await pool.query(SCHEMA);
+  await seedDemoSlotsIfEmpty();
 }
 
 function nowIso() {
