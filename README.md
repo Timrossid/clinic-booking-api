@@ -22,6 +22,7 @@ All endpoints require the header `X-API-Key: <key>`; missing/invalid keys return
 | --- | --- | --- |
 | POST | `/reset` | Replace all data with the provided `slots` array |
 | GET | `/slots` | List slots (optional `?provider=`) with `available` flag |
+| POST | `/demo-slots` | Append nine future demo slots without touching bookings |
 | POST | `/bookings` | Create a booking |
 | GET | `/bookings?email=...` | List a user's bookings (cursor paginated) |
 | GET | `/bookings/{id}` | Fetch one booking |

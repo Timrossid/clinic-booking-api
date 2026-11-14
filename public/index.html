@@ -84,7 +84,10 @@
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <h2 style="margin:0">Available slots</h2>
-      <button class="ghost" id="refresh">Refresh</button>
+      <div style="display:flex;gap:8px">
+        <button class="ghost" id="refresh">Refresh</button>
+        <button class="ghost" id="more-slots">Load more slots</button>
+      </div>
     </div>
     <div id="slots"><p class="empty">Loading…</p></div>
   </div>
@@ -264,7 +267,24 @@
     }
   }
 
+  async function loadMoreSlots() {
+    const btn = $("more-slots");
+    btn.disabled = true;
+    btn.textContent = "Adding…";
+    try {
+      const data = await api("demo-slots", { method: "POST" });
+      show("ok", "Added " + data.added + " more slots.");
+      await loadSlots();
+    } catch (err) {
+      show("err", messageFor(err));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Load more slots";
+    }
+  }
+
   $("refresh").addEventListener("click", loadSlots);
+  $("more-slots").addEventListener("click", loadMoreSlots);
   $("load-bookings").addEventListener("click", loadBookings);
   loadSlots();
 </script>

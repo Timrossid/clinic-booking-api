@@ -65,6 +65,42 @@ const SCHEMA = `
 
 const DEMO_PROVIDERS = ["Dr Ade", "Dr Bello", "Dr Chen"];
 
+// Adds nine future slots scheduled after the last existing slot, leaving every
+// existing slot and booking untouched. Returns how many were inserted.
+async function insertDemoSlots() {
+  const { rows } = await pool.query("SELECT max(start_at) AS latest FROM slots");
+  const latest = rows[0] && rows[0].latest ? new Date(rows[0].latest) : new Date();
+  const from = new Date(Math.max(latest.getTime(), Date.now()));
+  const dayStart = Date.UTC(
+    from.getUTCFullYear(),
+    from.getUTCMonth(),
+    from.getUTCDate()
+  );
+
+  const stamp = Date.now();
+  let i = 0;
+  for (let day = 1; day <= 3; day++) {
+    for (const hour of [9, 11, 14]) {
+      const start = new Date(dayStart + day * 86400000 + hour * 3600000);
+      const end = new Date(start.getTime() + 30 * 60000);
+      await pool.query(
+        `INSERT INTO slots (id, provider, start_text, end_text, start_at)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          `demo-${stamp}-${i}`,
+          DEMO_PROVIDERS[i % DEMO_PROVIDERS.length],
+          start.toISOString(),
+          end.toISOString(),
+          start.toISOString(),
+        ]
+      );
+      i += 1;
+    }
+  }
+  return i;
+}
+
 // A fresh database (or one whose slots are all taken) would leave the web page
 // with nothing to click, so top it up whenever no bookable slot exists.
 async function seedDemoSlotsIfEmpty() {
@@ -77,39 +113,7 @@ async function seedDemoSlotsIfEmpty() {
        )`
   );
   if (rows[0].n > 0) return;
-
-  const stamp = Date.now();
-  const today = new Date();
-  let i = 0;
-  for (let day = 1; day <= 3; day++) {
-    for (const hour of [9, 11, 14]) {
-      const start = new Date(
-        Date.UTC(
-          today.getUTCFullYear(),
-          today.getUTCMonth(),
-          today.getUTCDate() + day,
-          hour,
-          0,
-          0,
-          0
-        )
-      );
-      const end = new Date(start.getTime() + 30 * 60000);
-      await pool.query(
-        `INSERT INTO slots (id, provider, start_text, end_text, start_at)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO NOTHING`,
-        [
-          `demo-${stamp}-${i++}`,
-          DEMO_PROVIDERS[i % DEMO_PROVIDERS.length],
-          start.toISOString(),
-          end.toISOString(),
-          start.toISOString(),
-        ]
-      );
-    }
-  }
-  console.log("seeded demo slots");
+  console.log("seeded " + (await insertDemoSlots()) + " demo slots");
 }
 
 async function initDb() {
@@ -277,6 +281,17 @@ app.get(
         available: !r.booked,
       })),
     });
+  })
+);
+
+// --- POST /demo-slots -----------------------------------------------------
+// Appends fresh demo slots without changing existing slots or bookings.
+app.post(
+  "/demo-slots",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const added = await insertDemoSlots();
+    return res.status(201).json({ added });
   })
 );
 
