@@ -1,17 +1,18 @@
 # Clinic Booking API
 
-Appointment booking API built with Node.js + Express 5 and SQLite (in-memory).
+Appointment booking API built with Node.js + Express 5 and PostgreSQL.
 Includes a small web UI served from the same process.
 
 ## Run locally
 
 ```bash
 npm install
-API_KEY=test-key-123 node server.js
+DATABASE_URL="postgresql://user:pass@host:5432/dbname" API_KEY=test-key-123 node server.js
 # open http://localhost:3000
 ```
 
-`API_KEY` defaults to `clinic-book-api-key-2026` when unset. `PORT` defaults to `3000`.
+`DATABASE_URL` is required; tables are created automatically on boot. `API_KEY` defaults
+to `clinic-book-api-key-2026` when unset. `PORT` defaults to `3000`.
 
 ## Endpoints
 
@@ -64,10 +65,14 @@ Returns the cancelled booking. Cancelling twice returns `409`.
 
 - Bookings are guarded by a unique check on confirmed bookings per slot, so concurrent
   requests for the same slot result in exactly one `201` and the rest `409`.
-- Data lives in an in-memory SQLite database: it resets when the process restarts.
-  For durable storage, swap `new Database(":memory:")` for a file path or external DB.
+- State lives in PostgreSQL, so slots and bookings survive restarts and redeploys.
+  A partial unique index (`uniq_confirmed_slot`) is the final guard against double
+  booking, backed by an advisory row lock on the per-email rate-limit counter.
 
 ## Deploy
 
-`Dockerfile` and `render.yaml` are included. On Render, create a Web Service from this
-repo (or use the blueprint) and set the `API_KEY` environment variable.
+Live at **https://clinic-booking-api-kg0q.onrender.com** (page and API on the same origin).
+
+`Dockerfile` and `render.yaml` are included. On Render the Web Service needs two env vars:
+`API_KEY` and `DATABASE_URL` (the Postgres internal connection string). `render.yaml`
+wires the second one from the `clinic-booking-db` database declared in the same blueprint.
