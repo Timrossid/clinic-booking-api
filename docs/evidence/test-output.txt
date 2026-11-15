@@ -1,0 +1,17 @@
+
+> booking-api@1.0.0 test
+> node --test tests/assessment.test.js
+
+✔ Level 1: reset, list slots, create booking, get booking (241.156175ms)
+✔ Level 2: auth and validation errors (76.686147ms)
+✔ Level 3: no double booking, cancellation frees slot, re-cancel conflict (144.579691ms)
+✔ Level 4: idempotency replay, mismatch rejection, list and pagination (90.195226ms)
+✔ Level 5: rate limit 5 per email per 60s with Retry-After (66.86427ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 691.618988

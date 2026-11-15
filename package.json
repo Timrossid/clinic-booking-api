@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/assessment.test.js"
+    "test": "node --test tests/assessment.test.js",
+    "screenshots": "node docs/evidence/capture.js"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +15,8 @@
   "dependencies": {
     "express": "^5.3.0",
     "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.1"
   }
 }

@@ -165,6 +165,47 @@ Notes:
 - `POST /reset` is **destructive** (it clears slots/bookings/rate-limits/idempotency). Run tests against a disposable/local database or a dedicated test environment, not against production data.
 - `BASE_URL` defaults to `http://127.0.0.1:3011`.
 
+### Latest test result
+
+Run on 2026-11-15 against Node.js v24 and PostgreSQL 16 (local Docker container):
+
+```text
+✔ Level 1: reset, list slots, create booking, get booking
+✔ Level 2: auth and validation errors
+✔ Level 3: no double booking, cancellation frees slot, re-cancel conflict
+✔ Level 4: idempotency replay, mismatch rejection, list and pagination
+✔ Level 5: rate limit 5 per email per 60s with Retry-After
+tests 5  pass 5  fail 0
+```
+
+Full output: [`docs/evidence/test-output.txt`](docs/evidence/test-output.txt).
+
+## Evidence
+
+All evidence lives in [`docs/evidence/`](docs/evidence/), with an index in [`docs/evidence/README.md`](docs/evidence/README.md).
+
+| Screenshot | What it shows |
+| --- | --- |
+| [Live deployment](docs/evidence/screenshots/00-live-deployment-home.png) | Home page served from the Render URL above |
+| [Home](docs/evidence/screenshots/01-home.png) | Landing page |
+| [Booking wizard](docs/evidence/screenshots/02-booking.png) | Five-step booking flow using live `/api` slot data |
+| [Appointments](docs/evidence/screenshots/03-appointments.png) | Look up and cancel an existing booking |
+| [`GET /slots`](docs/evidence/screenshots/04-api-slots.png) | `200` with `available` flags |
+| [`GET /bookings?email=`](docs/evidence/screenshots/05-api-bookings.png) | `200` cursor-paginated list |
+| [`POST /bookings`](docs/evidence/screenshots/06-api-booking-idempotent-replay.png) | `201` replay for a repeated `Idempotency-Key` |
+| [`POST /bookings` conflict](docs/evidence/screenshots/07-api-conflict-409.png) | `409 slot already booked` |
+| [`GET /slots` unauthenticated](docs/evidence/screenshots/08-api-unauthorized-401.png) | `401 unauthorized` |
+
+Regenerate the screenshots (needs a local server with seeded data):
+
+```bash
+npm install
+npx playwright install chromium   # one-time browser download
+BASE_URL="http://127.0.0.1:3011" API_KEY="your-secret-key" \
+LIVE_URL="https://clinic-booking-api-kg0q.onrender.com" \
+npm run screenshots
+```
+
 ## Web app
 
 Three static pages are served from `public/` on the same origin as the API:
